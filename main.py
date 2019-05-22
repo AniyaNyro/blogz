@@ -42,7 +42,11 @@ def display_post():
         blog_text = request.form['text']
         
     else:
-
+        if request.args.get('id'):
+            dog = request.args.get('id')
+            post = Blog.query.get(dog)
+            return render_template('post.html', post=post)
+            
         blog_enteries = Blog.query.all()
         return render_template('todos.html', blog_enteries=blog_enteries)
 
