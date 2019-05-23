@@ -67,6 +67,11 @@ def register():
     else:
         return render_template('register.html')
 
+@app.route("/logout", methods=['POST'])
+def logout():
+    del session['user']
+    return redirect("/")
+
 
 
 @app.route('/new-post', methods=['POST', 'GET'])

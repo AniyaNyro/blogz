@@ -29,6 +29,16 @@
         <a href='/'>Home</a>
         <a href='/all-post'>All Post</a>
         <a href='/new-post'>New Post</a>
+
+        {% if 'user' in session %}
+            {{ session['user'] }}
+            <div style='text-align: center'>
+                <form action="/logout" method="post" id='logout'>
+                <input type="submit" value="Logout" />
+                </form>
+            </div>
+        {% endif %}
+
         <div style="float: right">
             <a href='/login'>Login</a>
             <a href='/register'>Register</a>
