@@ -45,8 +45,33 @@ def login():
 
     return render_template('login.html')
 
-@app.route('/add-post', methods=['POST', 'GET'])
+@app.route("/register", methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        verify = request.form['verify']
+    
+        username_db_count = User.query.filter_by(username=username).count()
+        if username_db_count > 0:
+            flash('yikes! "' + username + '" is already taken and password reminders are not implemented')
+            return redirect('/register')
+        if password != verify:
+            flash('passwords did not match')
+            return redirect('/register')
+        user = User(username=username, password=password)
+        db.session.add(user)
+        db.session.commit()
+        session['user'] = user.username
+        return redirect("/")
+    else:
+        return render_template('register.html')
+
+
+
+@app.route('/new-post', methods=['POST', 'GET'])
 def add_post():
+   
     if request.method == 'POST':
         title = request.form['title']
         text = request.form['text']
@@ -74,6 +99,16 @@ def display_post():
         blog_enteries = Blog.query.all()
         return render_template('todos.html', blog_enteries=blog_enteries)
 
+def logged_in_user():
+    owner = User.query.filter_by(username=session['user']).first()
+    return owner
+
+endpoints_without_login = ['login', 'register',]
+
+@app.before_request
+def require_login():
+    if not ('user' in session or request.endpoint in endpoints_without_login):
+        return redirect("/login")
 
 if __name__ == '__main__':
     app.run()
