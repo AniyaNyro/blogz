@@ -26,18 +26,19 @@ class Blog(db.Model):
     blog_text  = db.Column(db.String(2000))
     owner_id = db.Column(db.Integer, db.ForeignKey('user.id'))
 
-    def __init__(self, title, text):
+    def __init__(self, title, text, owner):
         self.blog_title = title
         self.blog_text = text
+        self.owner = owner
 
 @app.route("/login", methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        email = request.form['username']
+        username = request.form['username']
         password = request.form['password']
         user = User.query.filter_by(username=username).first()
         if user and user.password == password:
-            session['email'] = email
+            session['user'] = user.username
             flash("Logged in")
             return redirect('/')
         else:
@@ -72,15 +73,14 @@ def logout():
     del session['user']
     return redirect("/")
 
-
-
 @app.route('/new-post', methods=['POST', 'GET'])
 def add_post():
    
     if request.method == 'POST':
         title = request.form['title']
         text = request.form['text']
-        post = Blog(title, text)
+        owner = User.query.filter_by(username=session['user']).first()
+        post = Blog(title, text, owner)
         db.session.add(post)
         db.session.commit()
         flash("New Blog Entry")
@@ -101,6 +101,15 @@ def display_posts():
             dog = request.args.get('id')
             post = Blog.query.get(dog)
             return render_template('post.html',post=post)
+
+        if request.args.get('username'):
+            dog = request.args.get('username')
+            user = User.query.filter_by(username=dog).first()
+            blogs = user.blog_posts
+            if blogs == None:
+                return render_template('user.html', user=user, blogs=blogs)
+            return render_template('user.html', user=user, blogs=blogs)
+
             
         posts = Blog.query.all()
         return render_template('all-post.html', posts=posts)
@@ -111,14 +120,15 @@ def display_users():
 
     if request.method == 'POST':
         username = request.form['username'] 
-    
-        
+
     else:
-        if request.args.get('username'):
-            dog = request.args.get('username')
-            users = Blog.query.get(dog)
-            user_posts = User.query.all()
-            return render_template('user.html', user=user, user_posts=user_posts)
+        dog = request.args.get('username')
+        if dog:
+            user = User.query.filter_by(username=dog).first()
+            blogs = Blog.query.filter_by(owner=user).all()
+            if blogs == None:
+                return render_template('user.html', user=user, blogs=blogs)
+            return render_template('user.html', user=user, blogs=blogs)
            
     users = User.query.all()
     return render_template('all-users.html', users=users)
@@ -127,13 +137,11 @@ def logged_in_user():
     owner = User.query.filter_by(username=session['user']).first()
     return owner
 
-
-
-# @app.before_request
-# def require_login():
-#     endpoints_without_login = ['login', 'register']
-#     if not ('user' in session or request.endpoint in endpoints_without_login):
-#         return redirect("/login")
+@app.before_request
+def require_login():
+    endpoints_without_login = ['login', 'register', 'display_users', 'display_posts']
+    if not ('user' in session or request.endpoint in endpoints_without_login):
+        return redirect("/login")
 
 if __name__ == '__main__':
     app.run()
